@@ -1,0 +1,28 @@
+<div class="chat-container">
+  <div class="connected-users">
+    <h3>Usuarios conectados</h3>
+    <ul>
+      <li *ngFor="let usuario of usuariosConectados">{{ usuario.nombre }}</li>
+    </ul>
+  </div>
+  <div class="chat-box">
+    <div *ngIf="activo" class="login-section">
+      <input [(ngModel)]="nombreUsuario" placeholder="Introduce tu nombre de usuario" />
+      <button (click)="conectar()">Conectar</button>
+    </div>
+    <div *ngIf="!activo" class="chat-section">
+      <div class="message-section">
+        <h3>Mensajes</h3>
+        <ul>
+          <li *ngFor="let msg of mensajes">
+            {{ msg.usuario }}: {{ msg.mensaje }}
+          </li>
+        </ul>
+      </div>
+      <div class="input-section">
+        <input [(ngModel)]="mensaje" placeholder="Escribe tu mensaje" />
+        <button (click)="enviarMensaje()">Enviar</button>
+      </div>
+    </div>
+  </div>
+</div>
