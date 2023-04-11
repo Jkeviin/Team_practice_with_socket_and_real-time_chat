@@ -2,6 +2,13 @@ const express = require("express");
 const http = require("http");
 const socketIO = require("socket.io");
 
+// Importar Modelo
+const Mensaje = require('./model.js');
+
+// Importar Conexion
+const conectarDB = require('./mongodb.js');
+
+
 //Guarda en la variable app la funcion de express
 const app = express();
 // Configurar el servidor HTTP
@@ -38,7 +45,7 @@ io.on('connection', (socket) => {
         io.emit('usuarios-conectados', usuariosConectados);
     });
 
-    socket.on('usuario-conectado', (nombreUsuario) => {
+    socket.on('usuario-conectado', async (nombreUsuario) => {
         console.log(`El usuario ${nombreUsuario} se ha conectado`);
 
         // Agregar el usuario a la lista de usuarios conectados
@@ -60,32 +67,46 @@ io.on('connection', (socket) => {
          * para el evento usuarios-conectados recibirá la lista actualizada de usuarios 
          * conectados y podrá utilizarla para mostrarla en su interfaz de usuario
         */
-        io.emit('usuarios-conectados', usuariosConectados);
+        socket.emit('usuarios-conectados', usuariosConectados);
 
         // Emitir el evento 'mensaje-sistema' a todos los clientes conectados
         const mensajeSistema = {
             usuario: 'Sistema',
             mensaje: `${nombreUsuario} se ha unido al chat`
         };
-        io.emit('mensaje-sistema', mensajeSistema);
+        socket.broadcast.emit('mensaje-sistema', mensajeSistema);
+
+        const listaMensajes = await Mensaje.find();
+
+        for(let i = 0; i < listaMensajes.length; i++){
+            const mensajeChat = {
+                usuario: listaMensajes[i].usuario,
+                mensaje: listaMensajes[i].mensaje
+            };
+            socket.emit('mensaje', mensajeChat);
+        }
     });
 
     // Escuchar el evento 'nuevo-mensaje' cuando un cliente envía un mensaje
-    socket.on('nuevo-mensaje', (mensaje) => {
+    socket.on('nuevo-mensaje', async (mensaje) => {
         // Encontrar el usuario que envió el mensaje a traves del ID del socket que lo emitió
-        if(mensaje){
+        if (mensaje) {
             const usuario = usuariosConectados.find(u => u.id === socket.id);
             /**Crea objeto mensajeChat que contiene el nombre del usuario que
              * envio el mensaje y el mensaje en si recibido por parametro
              */
 
-            if(usuario){
+            if (usuario) {
                 const mensajeChat = {
                     usuario: usuario.nombre,
                     mensaje: mensaje
                 };
+
+                const chat = new Mensaje(mensajeChat);
+                await chat.save();
+
                 // Emitir el evento 'mensaje' a todos los clientes conectados
-                io.emit('mensaje', mensajeChat);
+                socket.emit('mensaje', mensajeChat);
             }
         }
     });
@@ -104,22 +125,31 @@ io.on('connection', (socket) => {
          *El primer argumento del método splice indica la posición del elemento a eliminar en el arreglo. 
          *El segundo argumento indica el número de elementos que se van a eliminar a partir de esa posición. 
          *En este caso, se va a eliminar solo un elemento, que es el usuario que se ha desconectado. */
-        if(usuarioDesconectado){
+        if (usuarioDesconectado) {
             usuariosConectados.splice(usuariosConectados.indexOf(usuarioDesconectado), 1);
 
             // Emitir el evento 'usuarios-conectados' a todos los clientes conectados
-            io.emit('usuarios-conectados', usuariosConectados);
+            socket.emit('usuarios-conectados', usuariosConectados);
             // Emitir el evento 'mensaje-sistema' a todos los clientes conectados
             const mensajeSistema = {
                 usuario: 'Sistema',
                 mensaje: `${usuarioDesconectado.nombre} se ha desconectado`
             };
-            io.emit('mensaje-sistema', mensajeSistema);
+            socket.broadcast.emit('mensaje-sistema', mensajeSistema);
         }
     });
 });
 
+
 // Iniciar el servidor HTTP
-server.listen(3000, () => {
-    console.log('Servidor iniciado en el puerto 3000');
-});
+const PORT = process.env.PORT || 3000;
+conectarDB()
+    .then(async () => {
+        server.listen(PORT, () => {
+            console.log(`Servidor escuchando en puerto ${PORT}`)
+        });
+    })
+    .catch((error) => {
+        console.error("Error al conectar a la base de datos", error);
+        process.exit(1);
+    });

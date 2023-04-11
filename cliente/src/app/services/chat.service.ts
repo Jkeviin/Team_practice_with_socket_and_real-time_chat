@@ -10,6 +10,7 @@ import { Injectable } from '@angular/core';
  * datos asíncronos en aplicaciones Angular. */
 import { BehaviorSubject } from 'rxjs';
 import { SocketService } from './socket.service';
+import { ToastrService } from 'ngx-toastr';
 
 @Injectable({
   providedIn: 'root'
@@ -20,8 +21,7 @@ export class ChatService {
   MensajesService = new BehaviorSubject<any[]>([]);
   ConectadosService = new BehaviorSubject<any[]>([]);
 
-
-  constructor(private socket: SocketService) {
+  constructor(private socket: SocketService, private toastr: ToastrService) {
 
     this.socket.io.on('mensaje', (mensajeChat: any) => {
       this.MensajesService.next([...this.MensajesService.getValue(), mensajeChat])
@@ -32,7 +32,7 @@ export class ChatService {
     });
 
     this.socket.io.on('mensaje-sistema', (mensajeSistema: any) => {
-      console.log(mensajeSistema)
+      this.toastr.success(mensajeSistema.usuario, mensajeSistema.mensaje);
     });
   }
 
