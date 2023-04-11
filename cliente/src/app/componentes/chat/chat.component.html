@@ -1,7 +1,8 @@
 <div class="chat-container">
   <div class="connected-users">
-    <h3>Usuarios conectados</h3>
+    <h3 >Usuarios conectados</h3>
     <ul>
+      <div *ngIf="usuariosConectados.length < 1">No hay usuarios Conectados</div>
       <li *ngFor="let usuario of usuariosConectados">{{ usuario.nombre }}</li>
     </ul>
   </div>

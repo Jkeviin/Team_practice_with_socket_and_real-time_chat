@@ -36,6 +36,10 @@ export class ChatService {
     });
   }
 
+  public verUsuarios(){
+    this.socket.io.emit('verUsuarios')
+  }
+
   public usuario_conectado (nombreUsuario: String){
     this.socket.io.emit('usuario-conectado', nombreUsuario);
   }

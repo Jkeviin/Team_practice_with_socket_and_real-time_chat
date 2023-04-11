@@ -34,7 +34,10 @@ const usuariosConectados = [];
 io.on('connection', (socket) => {
     console.log('Un cliente se ha conectado');
 
-    // Escuchar el evento 'usuario-conectado' cuando un cliente se une al chat
+    socket.on('verUsuarios', () => {
+        io.emit('usuarios-conectados', usuariosConectados);
+    });
+
     socket.on('usuario-conectado', (nombreUsuario) => {
         console.log(`El usuario ${nombreUsuario} se ha conectado`);
 
@@ -85,8 +88,6 @@ io.on('connection', (socket) => {
                 io.emit('mensaje', mensajeChat);
             }
         }
-        
-        
     });
 
     // Escuchar el evento 'disconnect' cuando un cliente se desconecta

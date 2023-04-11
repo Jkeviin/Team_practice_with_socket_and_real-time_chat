@@ -16,6 +16,9 @@ export class ChatComponent {
   mensaje: String = '';
 
   constructor(private chat: ChatService) {
+
+    this.chat.verUsuarios()
+
     this.chat.ConectadosService.subscribe((ConectadosService) => {
       this.usuariosConectados = ConectadosService;
     });
@@ -36,7 +39,6 @@ export class ChatComponent {
 
   enviarMensaje() {
     if (this.mensaje.trim() !== '') {
-      
       this.chat.nuevo_mensaje(this.mensaje);
       this.mensaje = '';
     }
