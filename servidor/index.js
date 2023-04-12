@@ -8,7 +8,6 @@ const Mensaje = require('./model.js');
 // Importar Conexion
 const conectarDB = require('./mongodb.js');
 
-
 //Guarda en la variable app la funcion de express
 const app = express();
 // Configurar el servidor HTTP
@@ -17,9 +16,9 @@ const server = http.createServer(app);
  *  servidor HTTP de Express.
  * */
 const io = socketIO(server, {
-    /**se configura el cors (Cross-Origin Resource Sharing) 
+    /**se configura el cors (Cross-Origin Resource Sharing)
      * para permitir solicitudes desde cualquier origen (origin: true)
-     * para permitir el envío de credenciales (credentials: true). 
+     * para permitir el envío de credenciales (credentials: true).
      * se especifican los métodos HTTP permitidos (methods: ['GET', 'POST']) */
     cors: {
         origin: true,
@@ -28,11 +27,11 @@ const io = socketIO(server, {
     }
 });
 
-
 /**Configurar un arreglo para almacenar los usuarios conectados
  * en el caso de no usar una base de datos
 */
 const usuariosConectados = [];
+const allMensajes = []
 
 // Escuchar el evento 'connection' cuando un cliente se conecta
 /**connection es el nombre del evento a escuchar
@@ -50,21 +49,22 @@ io.on('connection', (socket) => {
 
         // Agregar el usuario a la lista de usuarios conectados
         usuariosConectados.push({
-            /**id hace referencia al identificador único del socket 
-             * que acaba de conectarse al servidor. Este identificador 
-             * es proporcionado por el paquete socket.io y se puede acceder 
+            /**id hace referencia al identificador único del socket
+             * que acaba de conectarse al servidor. Este identificador
+             * es proporcionado por el paquete socket.io y se puede acceder
              * a él a través de la propiedad id del objeto socket. */
             id: socket.id,
-            /**nombre hace referencia al nombre de usuario que ha proporcionado 
-             * el cliente al conectarse al chat. Este nombre se ha pasado como 
+            /**nombre hace referencia al nombre de usuario que ha proporcionado
+             * el cliente al conectarse al chat. Este nombre se ha pasado como
              * parámetro en el evento 'usuario-conectado'. */
             nombre: nombreUsuario
         });
 
+
         /**Emitir el evento 'usuarios-conectados' a todos los clientes conectados
          * al servidor.
-         * Cada cliente que esté conectado al servidor y tenga un manejador de eventos 
-         * para el evento usuarios-conectados recibirá la lista actualizada de usuarios 
+         * Cada cliente que esté conectado al servidor y tenga un manejador de eventos
+         * para el evento usuarios-conectados recibirá la lista actualizada de usuarios
          * conectados y podrá utilizarla para mostrarla en su interfaz de usuario
         */
         socket.emit('usuarios-conectados', usuariosConectados);
@@ -76,15 +76,15 @@ io.on('connection', (socket) => {
         };
         socket.broadcast.emit('mensaje-sistema', mensajeSistema);
 
-        const listaMensajes = await Mensaje.find();
 
-        for(let i = 0; i < listaMensajes.length; i++){
-            const mensajeChat = {
-                usuario: listaMensajes[i].usuario,
-                mensaje: listaMensajes[i].mensaje
-            };
-            socket.emit('mensaje', mensajeChat);
+        const listaMensajes = await Mensaje.find({}, { usuario: 1, mensaje: 1, _id: 0 });
+
+        if (listaMensajes.length > 0) {
+            io.emit('mensaje', listaMensajes);
         }
+
+        allMensajes.splice(0, allMensajes.length, ...listaMensajes);
+
     });
 
     // Escuchar el evento 'nuevo-mensaje' cuando un cliente envía un mensaje
@@ -97,16 +97,22 @@ io.on('connection', (socket) => {
              */
 
             if (usuario) {
+
                 const mensajeChat = {
                     usuario: usuario.nombre,
                     mensaje: mensaje
                 };
 
+
                 const chat = new Mensaje(mensajeChat);
                 await chat.save();
 
+                allMensajes.push(mensajeChat)
+
+                console.log(allMensajes);
+
                 // Emitir el evento 'mensaje' a todos los clientes conectados
-                socket.emit('mensaje', mensajeChat);
+                io.emit('mensaje', allMensajes);
             }
         }
     });
@@ -122,9 +128,10 @@ io.on('connection', (socket) => {
          * objeto usuarioDesconectado en el arreglo usuariosConectados.
          *El método splice se utiliza para eliminar el objeto de la lista.
          *
-         *El primer argumento del método splice indica la posición del elemento a eliminar en el arreglo. 
-         *El segundo argumento indica el número de elementos que se van a eliminar a partir de esa posición. 
+         *El primer argumento del método splice indica la posición del elemento a eliminar en el arreglo.
+         *El segundo argumento indica el número de elementos que se van a eliminar a partir de esa posición.
          *En este caso, se va a eliminar solo un elemento, que es el usuario que se ha desconectado. */
+
         if (usuarioDesconectado) {
             usuariosConectados.splice(usuariosConectados.indexOf(usuarioDesconectado), 1);
 
@@ -139,7 +146,6 @@ io.on('connection', (socket) => {
         }
     });
 });
-
 
 // Iniciar el servidor HTTP
 const PORT = process.env.PORT || 3000;

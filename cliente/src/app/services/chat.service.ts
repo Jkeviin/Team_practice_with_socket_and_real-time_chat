@@ -1,12 +1,12 @@
 import { Injectable } from '@angular/core';
-/** un "observable" es una fuente de datos que emite valores a 
- * lo largo del tiempo. Puedes pensar en un observable como una 
- * corriente de datos que fluye continuamente. Los observables 
- * son muy útiles para trabajar con eventos asíncronos en Angular, 
- * como las respuestas de una API o las interacciones del usuario. 
- * Puedes suscribirte a un observable para recibir sus valores y actuar 
+/** un "observable" es una fuente de datos que emite valores a
+ * lo largo del tiempo. Puedes pensar en un observable como una
+ * corriente de datos que fluye continuamente. Los observables
+ * son muy útiles para trabajar con eventos asíncronos en Angular,
+ * como las respuestas de una API o las interacciones del usuario.
+ * Puedes suscribirte a un observable para recibir sus valores y actuar
  * en consecuencia, ya sea actualizando la vista o realizando otras tareas.
- * En resumen, los observables son una herramienta fundamental para manejar 
+ * En resumen, los observables son una herramienta fundamental para manejar
  * datos asíncronos en aplicaciones Angular. */
 import { BehaviorSubject } from 'rxjs';
 import { SocketService } from './socket.service';
@@ -24,7 +24,8 @@ export class ChatService {
   constructor(private socket: SocketService, private toastr: ToastrService) {
 
     this.socket.io.on('mensaje', (mensajeChat: any) => {
-      this.MensajesService.next([...this.MensajesService.getValue(), mensajeChat])
+      console.log(mensajeChat)
+      this.MensajesService.next(mensajeChat)
     });
 
     this.socket.io.on('usuarios-conectados', (usuariosConectados: any) => {
